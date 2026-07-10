@@ -31,7 +31,7 @@ function vyrblLocal-cekaniPartition {
     }while( ( Get-Partition |? { $_.Type -eq 'Recovery' } | Measure-Object ).Count -eq 0 )
     Write-Host 'Recovery partition vytvorena.' -ForegroundColor red -BackgroundColor yellow
     ( ( Get-Date -Format 'yyyy-MM-dd HH:mm:ss' ) + ' Recovery partition vytvorena.' ) | Out-File $logFile -Append -Encoding ascii
-    .\_test.ps1
+    #.\_test.ps1
 }
 
 function vyrblLocal-cekaniDesifrovani {
