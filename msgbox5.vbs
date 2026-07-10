@@ -1,0 +1,1 @@
+x=msgbox("recovery partition not on slot 4",48,"testres")

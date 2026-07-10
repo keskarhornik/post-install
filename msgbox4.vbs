@@ -1,0 +1,1 @@
+x=msgbox("less than 16 RAM",64,"testres")
