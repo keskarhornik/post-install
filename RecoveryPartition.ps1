@@ -27,8 +27,8 @@ function vyrblLocal-beziDesifrovani {
 }
 
 function vyrblLocal-vytvoritRecoveryPartition {
-    Write-Host 'Vytvarim recovery partition.' -ForegroundColor red -BackgroundColor yellow
-    ( ( Get-Date -Format 'yyyy-MM-dd HH:mm:ss' ) + ' Vytvarim recovery partition.' ) | Out-File $logFile -Append -Encoding ascii
+    #Write-Host 'Vytvarim recovery partition.' -ForegroundColor red -BackgroundColor yellow
+    #( ( Get-Date -Format 'yyyy-MM-dd HH:mm:ss' ) + ' Vytvarim recovery partition.' ) | Out-File $logFile -Append -Encoding ascii
 
     $newSize = ( Get-Partition -DriveLetter C ).Size - 1073741824 # zmenseni o 1 GB
     if( $newSize -gt ( Get-PartitionSupportedSize -DriveLetter C ).SizeMin ){
@@ -116,8 +116,8 @@ function fvLocalMain {
     }else{
 
         # je recovery partition
-        Write-Host 'Tady uz recovery partition je.' -ForegroundColor red -BackgroundColor yellow
-        ( ( Get-Date -Format 'yyyy-MM-dd HH:mm:ss' ) + ' Tady uz recovery partition je.' ) | Out-File $logFile -Append -Encoding ascii
+        
+        
 
         if( ( ( Get-BitLockerVolume -MountPoint c: ).VolumeStatus ) -eq 'FullyDecrypted' ){
 
@@ -167,9 +167,20 @@ function vyrblLocal-cekaniSifrovani {
     }while( ( ( Get-BitLockerVolume -MountPoint c: ).VolumeStatus ) -ne 'FullyEncrypted' )
     
 }
+
+function fvLocal-cekaniComplete {
+    do{
+        Start-Sleep -Milliseconds 100
+        
+    }while($running)
+    $State.Text = "Hotovo"
+}
+# ---- State Machine ----
+$running = false
 # ---- Form ----
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'Create Recovery Partition'
+$form.BackColor = [System.Drawing.Color]::FromArgb(10, 214, 255)
 $form.ClientSize = New-Object System.Drawing.Size(460, 300)
 
 # ---- label3 (Label) ----
@@ -207,7 +218,12 @@ $form.Controls.Add($State)
 
 # ---- Event handlers ----
 $AbortBtn.Add_Click({
-    fvLocalMain
+    if($running){
+        exit
+    }else{
+        $running = true
+        fvLocalMain
+    }
 })
 
 # ---- Show the form ----
