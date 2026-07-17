@@ -207,7 +207,7 @@ $form.Controls.Add($State)
 
 # ---- Event handlers ----
 $AbortBtn.Add_Click({
-    # TODO: AbortBtn.Click
+    fvLocalMain
 })
 
 # ---- Show the form ----
