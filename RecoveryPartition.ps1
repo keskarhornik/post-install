@@ -176,7 +176,7 @@ function fvLocal-cekaniComplete {
     $State.Text = "Hotovo"
 }
 # ---- State Machine ----
-$running = false
+$running = $false
 # ---- Form ----
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'Create Recovery Partition'
@@ -221,7 +221,7 @@ $AbortBtn.Add_Click({
     if($running){
         exit
     }else{
-        $running = true
+        $running = $true
         fvLocalMain
     }
 })
