@@ -105,10 +105,10 @@ function GetSaturninUserExists {
     $localusr = $null
     $SaturninExistst = $false
     try{
-        Write-Output "finding $($usr)"
+        
         $localusr = Get-LocalUser $usr 
     }catch{
-        Write-Output "no $($usr)"  
+        
         
     }
     if ($localusr -ceq $null){
