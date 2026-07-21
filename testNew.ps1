@@ -4,131 +4,134 @@
 #################################################################
 
 # nealokovany prostor na disku
-$unalocatedDiskSpace = $false
 
 
-$cdrive = Get-Partition -Driveletter C | Get-Disk
-$totalvol = $cdrive.Size
-$alls = ($cdrive | Get-Partition | Measure-Object -Property Size -Sum).sum
-$unal = ( $totalvol - $alls )
 
-Write-Host ('disk space: ' + [string]( $totalvol / 1024 / 1024 / 1024 ) + ' GB') -BackgroundColor Blue -ForegroundColor Green
-$unalspc = $null
-if($unal / 1024 / 1024 -gt 100){
-    Write-Host ('unalocated: ' + [string]( $unal / 1024 / 1024 ) + ' MB') -BackgroundColor DarkRed -ForegroundColor Yellow
+function GetCdriveUnalocatedSpace{
+    $cdrive = Get-Partition -Driveletter C | Get-Disk
+    $totalvol = $cdrive.Size
+    $alls = ($cdrive | Get-Partition | Measure-Object -Property Size -Sum).sum
+    $unal = ( $totalvol - $alls )
+
+    Write-Host ('disk space: ' + [string]( $totalvol / 1024 / 1024 / 1024 ) + ' GB') -BackgroundColor Blue -ForegroundColor Green
+    $unalspc = $null
+    if($unal / 1024 / 1024 -gt 100){
+        Write-Host ('unalocated: ' + [string]( $unal / 1024 / 1024 ) + ' MB') -BackgroundColor DarkRed -ForegroundColor Yellow
+        return $true   
+    }else{
+        Write-Host ('unalocated: ' + [string]( $unal / 1024 / 1024 ) + ' MB') -BackgroundColor Blue -ForegroundColor Green
+        return $false
+    }
+
+}
+
+
+function GetRecoveryPartitionExists{
+    if( ( ( Get-Partition |? { $_.Type -eq 'Recovery' } | Measure-Object ).Count ) -gt 0 ){
+        Write-Host "recovery partition: ANO" -BackgroundColor Blue -ForegroundColor Green
+        $partition4 = Get-Partition |? { $_.Type -eq 'Recovery' }
+        if ($partition4.PartitionNumber -eq 4 ){
+            Write-Host "recovery partition slot 4" -BackgroundColor Blue -ForegroundColor Green
+            return $true
+        }else{
+            Write-Host "recovery partition slot $($partition4.PartitionNumber)" -BackgroundColor DarkRed -ForegroundColor Yellow
+            return $false
+        }
+    }else{
+        Write-Host "recovery partition: NE" -BackgroundColor DarkRed -ForegroundColor Yellow
+        Start-Process -FilePath ".\msgbox2.vbs"
+        return $false
+    }
+
     
-}else{
-    Write-Host ('unalocated: ' + [string]( $unal / 1024 / 1024 ) + ' MB') -BackgroundColor Blue -ForegroundColor Green
-    $unalocatedDiskSpace = $true
+
 }
 
-# recovery partition
-
-$rpc = $false
-if( ( ( Get-Partition |? { $_.Type -eq 'Recovery' } | Measure-Object ).Count ) -gt 0 ){
-    Write-Host "recovery partition: ANO" -BackgroundColor Blue -ForegroundColor Green
-    $rpc = $true
-}else{
-    Write-Host "recovery partition: NE" -BackgroundColor DarkRed -ForegroundColor Yellow
-    Start-Process -FilePath ".\msgbox2.vbs"
-    
-}
-
-$partition4 = Get-Partition |? { $_.Type -eq 'Recovery' }
-if ($partition4.PartitionNumber -eq 4 ){
-    Write-Host "recovery partition slot 4" -BackgroundColor Blue -ForegroundColor Green
-}else{
-    Write-Host "recovery partition slot $($partition4.PartitionNumber)" -BackgroundColor DarkRed -ForegroundColor Yellow
-    Start-Process -FilePath ".\msgbox5.vbs"
-}
-
-if($unalocatedDiskSpace -eq $false){
+function ResizeDisk {
     if($rpc -eq $true){
         Remove-Partition -InputObject $partition4
     }
     Resize-Partition -DriveLetter C -Size $(Get-PartitionSupportedSize -DriveLetter C).SizeMax
-    
 }
 # kolik je RAM
-$lowRam = $false
-$ram = ( (Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1gb )
-Write-Host "RAM: $($ram)" -BackgroundColor Blue -ForegroundColor Green
-if(( (Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1gb ) -lt 16)
-{
-    
-    Write-Host "low ram" -BackgroundColor DarkRed -ForegroundColor Yellow
-}else{
-    $lowRam = $true
+function GetRamEnought {
+    $ram = ( (Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1gb )
+    Write-Host "RAM: $($ram)" -BackgroundColor Blue -ForegroundColor Green
+    if(( (Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum / 1gb ) -lt 16)
+    {
+        return $false
+    }else{
+        return $true
+    }
+
+}
+
+function DeleteLocalUsers {
+    $usrs = Get-LocalUser
+    foreach($user in $usrs)
+    {
+        if($user.name -ceq "saturnin")
+        {
+            Write-Host "working" -ForegroundColor Blue -BackgroundColor Blue
+        
+        }elseif ($user.name -ceq "Administrator"){
+            Disable-LocalUser -InputObject $user
+        }elseif ($user.name -ceq "Guest"){
+            Disable-LocalUser -InputObject $user
+        }elseif ($user.name -ceq "DefaultAccount"){
+            Disable-LocalUser -InputObject $user
+        }elseif ($user.name -ceq "WDAGUtilityAccount"){
+            Disable-LocalUser -InputObject $user
+        }
+        else{
+            Remove-LocalUser -Name $user.name
+        }
+    }
 }
 
 # je vytvoren user saturnin ???
 
-$usr = "saturnin"
-$localusr = $null
-$SaturninExistst = $false
-try{
-    Write-Output "finding $($usr)"
-    $localusr = Get-LocalUser $usr 
-}catch{
-    Write-Output "no $($usr)"  
-    Start-Process -FilePath ".\msgbox3.vbs"
-}
-if ($localusr -ceq $null){
+function CreateUserSaturnin {
     Write-Host "no $($usr)"  -BackgroundColor DarkRed -ForegroundColor Yellow
     Start-Process -FilePath ".\msgbox3.vbs"
     $tmp55 = Read-Host -Prompt "do you want to create saturnin if the next step completes the computer will be nearly unusable y/n"
     if ($tmp55 -ceq "y"){
         New-LocalUser -Name "saturnin"
         Add-LocalGroupMember -Group "Administrators" -Member "saturnin"
-    } 
-}else{
-    Write-Host "$($localusr) was found" -BackgroundColor Blue -ForegroundColor Green
+    }
+}
+
+function GetSaturninUserExists {
+    $usr = "saturnin"
+    $localusr = $null
+    $SaturninExistst = $false
+    try{
+        Write-Output "finding $($usr)"
+        $localusr = Get-LocalUser $usr 
+    }catch{
+        Write-Output "no $($usr)"  
+        Start-Process -FilePath ".\msgbox3.vbs"
+    }
+    if ($localusr -ceq $null){
+        return $false     
+    }else{
+        Write-Host "$($localusr) was found" -BackgroundColor Blue -ForegroundColor Green
+        return $true
+    }
+
+}
+
+$Unalocated = GetCdriveUnalocatedSpace
+$Recovery = GetRecoveryPartitionExists
+$Ram = GetRamEnought
+$Sat = GetSaturninUserExists
+
+if($Sat){
+    DeleteLocalUsers
 }
 
 # smazani vsech lokalnich uctu mimo "saturnin", Administrator, Guest, DefaultAccount, WDAGUtilityAccount
 # Administrator, Guest, DefaultAccount, WDAGUtilityAccount - tyto by meli byt disabled (by default)
-$usrs = Get-LocalUser
-foreach($user in $usrs)
-{
-    if($user.name -ceq "saturnin")
-    {
-        Write-Host "working" -ForegroundColor Blue -BackgroundColor Blue
-        
-    }elseif ($user.name -ceq "Administrator"){
-        Disable-LocalUser -InputObject $user
-    }elseif ($user.name -ceq "Guest"){
-        Disable-LocalUser -InputObject $user
-    }elseif ($user.name -ceq "DefaultAccount"){
-        Disable-LocalUser -InputObject $user
-    }elseif ($user.name -ceq "WDAGUtilityAccount"){
-        Disable-LocalUser -InputObject $user
-    }
-    else{
-        Remove-LocalUser -Name $user.name
-    }
-}
-
-
-# je update BIOSu required (jen pro dell optiplex 7010)
-
-#Write-Host "bios update for optiplex 7010 found want to install y/n" -BackgroundColor DarkRed -ForegroundColor Yellow
-#$yn = Read-Host -Prompt "y/n"
-#if ($yn -ccontains "y"){
-#Start-Process -FilePath ".\OptiPlex_7010_1.26.1_SEMB.exe"
-
-#}
-
-# pokud neni recovery partition - moznost spustit jeji vytvoreni
-
-if ($rpc -ceq "nn"){
-    Write-Host "create partition y/n" -ForegroundColor Cyan -BackgroundColor Red 
-    $yn = Read-Host -Prompt "y/n"
-    if ($yn -ccontains "y"){
-        .\createRecoveryPartition_local_FV.ps1
-    }
-}
-
-
 
 
 ############################################################################
@@ -161,7 +164,12 @@ $form.Controls.Add($label1)
 $RAMBUTTON = New-Object System.Windows.Forms.Button
 $RAMBUTTON.Text = '16GB ok'
 $RAMBUTTON.ForeColor = [System.Drawing.Color]::FromArgb(0, 0, 0)
-$RAMBUTTON.BackColor = [System.Drawing.Color]::FromArgb(0, 255, 30)
+if($Ram){
+    $RAMBUTTON.BackColor = [System.Drawing.Color]::FromArgb(0, 255, 0)
+}else{
+    $RAMBUTTON.BackColor = [System.Drawing.Color]::FromArgb(255, 0, 0)
+}
+
 $RAMBUTTON.Enabled = $false
 $RAMBUTTON.Location = New-Object System.Drawing.Point(32, 40)
 $RAMBUTTON.Size = New-Object System.Drawing.Size(80, 32)
@@ -179,7 +187,12 @@ $form.Controls.Add($label2)
 # ---- saturninButton (Button) ----
 $saturninButton = New-Object System.Windows.Forms.Button
 $saturninButton.Text = 'FIX NOW'
-$saturninButton.BackColor = [System.Drawing.Color]::FromArgb(255, 0, 0)
+if($Sat){
+    $saturninButton.BackColor = [System.Drawing.Color]::FromArgb(0, 255, 0)
+    $saturninButton.Enabled = $false
+}else{
+    $saturninButton.BackColor = [System.Drawing.Color]::FromArgb(255, 0, 0)
+}
 $saturninButton.Location = New-Object System.Drawing.Point(32, 104)
 $saturninButton.Size = New-Object System.Drawing.Size(90, 28)
 $saturninButton.Name = 'saturninButton'
@@ -196,6 +209,12 @@ $form.Controls.Add($label3)
 # ---- RecoveryButton (Button) ----
 $RecoveryButton = New-Object System.Windows.Forms.Button
 $RecoveryButton.Text = 'FIX NOW'
+if($Recovery){
+    $RecoveryButton.BackColor = [System.Drawing.Color]::FromArgb(0, 255, 0)
+    $RecoveryButton.Enabled = $false
+}else{
+    $RecoveryButton.BackColor = [System.Drawing.Color]::FromArgb(255, 0, 0)
+}
 $RecoveryButton.Location = New-Object System.Drawing.Point(32, 168)
 $RecoveryButton.Size = New-Object System.Drawing.Size(90, 28)
 $RecoveryButton.Name = 'RecoveryButton'
@@ -204,10 +223,14 @@ $form.Controls.Add($RecoveryButton)
 # ---- Event handlers ----
 $saturninButton.Add_Click({
     # TODO: saturninButton.Click
+    CreateUserSaturnin
+    DeleteLocalUsers
 })
 
 $RecoveryButton.Add_Click({
     # TODO: RecoveryButton.Click
+    ResizeDisk
+    .\RecoveryPartition.ps1
 })
 
 # ---- Show the form ----
