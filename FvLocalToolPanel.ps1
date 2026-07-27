@@ -33,6 +33,7 @@ $script:states = @{
     "IDLE"  = @{ Color = [System.Windows.Media.Color]::FromRgb(30, 41, 59);   Text = "[ UNKNOWN ]`n" }
     "OK"    = @{ Color = [System.Windows.Media.Color]::FromRgb(16, 185, 129);  Text = "[ READY ]`n" }
     "ERROR" = @{ Color = [System.Windows.Media.Color]::FromRgb(225, 29, 72);   Text = "[ ERROR ]`n" }
+    "COMMAND" = @{ Color = [System.Windows.Media.Color]::FromRgb(0,0,255); Text = "[ COMMAND ]`n"}
 }
 
 # 4. Helper Function for Smooth Color Transitions
@@ -60,7 +61,7 @@ function Switch-ButtonState {
         [System.Object]$sndr,
 
         [Parameter(Mandatory = $true)]
-        [ValidateSet("IDLE", "OK", "ERROR")]
+        [ValidateSet("IDLE", "OK", "ERROR", "COMMAND")]
         [string]$TargetState
     )
 
@@ -70,7 +71,7 @@ function Switch-ButtonState {
     $sndr.Content = $script:states[$TargetState].Text + $sndr.Name.Replace("Btn", "")
 }
 
-$Buttons = @("RecoveryPartition", "Updates", "DiskAllocated", "SYSPREp", "RAM", "Saturnin")
+$Buttons = @(@{Text = "RecoveryPartition"; Style = "IDLE"}, @{ Text = "Updates"; Style = "IDLE"}, @{ Text="DiskAllocated"; Style = "IDLE"}, @{Text = "SYSPREp"; Style = "IDLE"}, @{Text="RAM"; Style="IDLE"}, @{Text="Saturnin"; Style="IDLE"}, @{Text="DeleteLocalUsers"; Style="COMMAND"})
 
 # 5. Build Dynamic Buttons
 foreach ($i in $Buttons) {
@@ -79,9 +80,9 @@ foreach ($i in $Buttons) {
         $btn.Style = $window.Resources["AnimatedBlueButton"]
     }
     
-    $btn.Name = $i
+    $btn.Name = $i.Text
     # Initialize initial IDLE state
-    Switch-ButtonState -sndr $btn -TargetState "IDLE"
+    Switch-ButtonState -sndr $btn -TargetState $i.Style
 
     $btn.Add_Click({
         param($sender, $e)
@@ -167,6 +168,28 @@ foreach ($i in $Buttons) {
                 }elseif($sender.Tag -eq "ERROR"){
                     New-LocalUser -Name "saturnin" -NoPassword
                     Add-LocalGroupMember -Group "Administrators" -Member "saturnin"
+                }
+            }
+            "DeleteLocalUsers"{
+                $usrs = Get-LocalUser
+                foreach($user in $usrs)
+                {
+                    if($user.name -ceq "saturnin")
+                    {
+                        Write-Host "working" -ForegroundColor Blue -BackgroundColor Blue
+                    
+                    }elseif ($user.name -ceq "Administrator"){
+                        Disable-LocalUser -InputObject $user
+                    }elseif ($user.name -ceq "Guest"){
+                        Disable-LocalUser -InputObject $user
+                    }elseif ($user.name -ceq "DefaultAccount"){
+                        Disable-LocalUser -InputObject $user
+                    }elseif ($user.name -ceq "WDAGUtilityAccount"){
+                        Disable-LocalUser -InputObject $user
+                    }
+                    else{
+                        Remove-LocalUser -Name $user.name
+                    }
                 }
             }
         }
