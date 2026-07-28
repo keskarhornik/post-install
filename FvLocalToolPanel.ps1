@@ -71,7 +71,7 @@ function Switch-ButtonState {
     $sndr.Content = $script:states[$TargetState].Text + $sndr.Name.Replace("Btn", "")
 }
 
-$Buttons = @(@{Text = "RecoveryPartition"; Style = "IDLE"}, @{ Text = "Updates"; Style = "IDLE"}, @{ Text="DiskAllocated"; Style = "IDLE"}, @{Text = "SYSPREp"; Style = "IDLE"}, @{Text="RAM"; Style="IDLE"}, @{Text="Saturnin"; Style="IDLE"}, @{Text="DeleteLocalUsers"; Style="COMMAND"})
+$Buttons = @(@{Text = "RecoveryPartition"; Style = "IDLE"}, @{ Text = "Updates"; Style = "IDLE"}, @{ Text="DiskAllocated"; Style = "IDLE"}, @{Text = "SYSPREp"; Style = "IDLE"}, @{Text="RAM"; Style="IDLE"}, @{Text="Saturnin"; Style="IDLE"}, @{Text="DeleteLocalUsers"; Style="COMMAND"}; @{Text="SusIdReplace"; Style="COMMAND"})
 
 # 5. Build Dynamic Buttons
 foreach ($i in $Buttons) {
