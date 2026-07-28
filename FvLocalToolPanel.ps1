@@ -194,6 +194,9 @@ foreach ($i in $Buttons) {
                     }
                 }
             }
+            "SusIdReplace"{
+                .\sus.ps1
+            }
         }
     })
 
