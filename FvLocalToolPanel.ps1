@@ -144,11 +144,13 @@ foreach ($i in $Buttons) {
             }
             "RAM"{
                 if($sender.Tag -eq "IDLE"){
-                    if(((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1GB) -gt 16){
+                    if(((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1GB) -gt 14){
                         Switch-ButtonState -sndr $sender -TargetState "OK"
                     }else{
                         Switch-ButtonState -sndr $sender -TargetState "ERROR"
                     }
+                }elseif($sender.Tag -eq "ERROR"){
+                    Start-Process taskmgr
                 }
             }
             "Saturnin"{
