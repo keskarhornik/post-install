@@ -34,6 +34,8 @@ $script:states = @{
     "OK"    = @{ Color = [System.Windows.Media.Color]::FromRgb(16, 185, 129);  Text = "[ READY ]`n" }
     "ERROR" = @{ Color = [System.Windows.Media.Color]::FromRgb(225, 29, 72);   Text = "[ ERROR ]`n" }
     "COMMAND" = @{ Color = [System.Windows.Media.Color]::FromRgb(0,0,255); Text = "[ COMMAND ]`n"}
+    "RUNNING" = @{ Color = [System.Windows.Media.Color]::FromRgb(65, 240, 237); Text = "[ RUNNING ]`n"}
+    "NOTRUNNING" = @{Color = [System.Windows.Media.Color]::FromRgb(240, 131, 66); Text = "[ NOTRUNNING ]`n"}
 }
 
 # 4. Helper Function for Smooth Color Transitions
@@ -61,7 +63,7 @@ function Switch-ButtonState {
         [System.Object]$sndr,
 
         [Parameter(Mandatory = $true)]
-        [ValidateSet("IDLE", "OK", "ERROR", "COMMAND")]
+        [ValidateSet("IDLE", "OK", "ERROR", "COMMAND", "RUNNING", "NOTRUNNING")]
         [string]$TargetState
     )
 
@@ -71,7 +73,9 @@ function Switch-ButtonState {
     $sndr.Content = $script:states[$TargetState].Text + $sndr.Name.Replace("Btn", "")
 }
 
-$Buttons = @(@{Text = "RecoveryPartition"; Style = "IDLE"}, @{ Text = "Updates"; Style = "IDLE"}, @{ Text="DiskAllocated"; Style = "IDLE"}, @{Text = "SYSPREp"; Style = "IDLE"}, @{Text="RAM"; Style="IDLE"}, @{Text="Saturnin"; Style="IDLE"}, @{Text="DeleteLocalUsers"; Style="COMMAND"}; @{Text="SusIdReplace"; Style="COMMAND"})
+$Buttons = @(@{Text = "RecoveryPartition"; Style = "IDLE"; RightClick = @()}, @{ Text = "Updates"; Style = "IDLE"; RightClick = @()}, @{ Text="DiskAllocated"; Style = "IDLE"; RightClick = @()}, 
+            @{Text = "SYSPREp"; Style = "IDLE"; RightClick = @()}, @{Text="RAM"; Style="IDLE"; RightClick = @()}, @{Text="Saturnin"; Style="IDLE"; RightClick = @()}, 
+            @{Text = "GetBitLLockerStatus"; Style="IDLE"; RightClick = @("TurnOnBitLocker", "TurnOffBitLocker")},@{Text="DeleteLocalUsers"; Style="COMMAND"; RightClick = @()}; @{Text="SusIdReplace"; Style="COMMAND"}; RightClick = @())
 
 # 5. Build Dynamic Buttons
 foreach ($i in $Buttons) {
@@ -83,6 +87,33 @@ foreach ($i in $Buttons) {
     $btn.Name = $i.Text
     # Initialize initial IDLE state
     Switch-ButtonState -sndr $btn -TargetState $i.Style
+
+    $contextMenu = New-Object System.Windows.Controls.ContextMenu
+
+    foreach($ii in $i.RightClick){
+
+        $menuItem1 = New-Object System.Windows.Controls.MenuItem
+        $menuItem1.Header = $ii
+        $menuItem1.Add_Click({
+            param($sender, $e)
+
+            switch ($sender.Header) {
+                "TurnOnBitLocker" {
+                    Enable-BitLocker
+                    Switch-ButtonState -sndr $btn -TargetState "IDLE"
+                }
+                "TurnOffBitLocker" {
+                    Disable-BitLocker
+                    Switch-ButtonState -sndr $btn -TargetState "IDLE"
+                }
+            }
+            
+        })
+
+        $null = $contextMenu.Items.Add($menuItem1)
+    }
+
+    $btn.ContextMenu = $contextMenu
 
     $btn.Add_Click({
         param($sender, $e)
@@ -172,6 +203,19 @@ foreach ($i in $Buttons) {
                     Add-LocalGroupMember -Group "Administrators" -Member "saturnin"
                 }
             }
+            "GetBitLockerStatus"{
+                if($sender.Tag -eq "IDLE"){
+                    if((Get-BitLockerVolume -MountPoint "C:").VolumeStatus -eq "FullyEncrypted"){
+                        Switch-ButtonState -sndr $sender -TargetState "RUNNING"
+                    }elseif((Get-BitLockerVolume -MountPoint "C:").VolumeStatus -eq "FullyDecrypted"){
+                        Switch-ButtonState -sndr $sender -TargetState "NOTRUNNING"
+                    }else{
+                        Switch-ButtonState -sndr $sender -TargetState "ERROR"
+                    }
+                }else{
+                    Switch-ButtonState -sndr $sender -TargetState "IDLE"
+                }
+            }
             "DeleteLocalUsers"{
                 $usrs = Get-LocalUser
                 foreach($user in $usrs)
@@ -197,6 +241,7 @@ foreach ($i in $Buttons) {
             "SusIdReplace"{
                 .\sus.ps1
             }
+
         }
         if($sender.Tag -eq "ERROR"){
             Switch-ButtonState -sndr $sender -TargetState "IDLE"
