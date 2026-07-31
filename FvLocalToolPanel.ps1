@@ -243,9 +243,7 @@ foreach ($i in $Buttons) {
             }
 
         }
-        if($sender.Tag -eq "ERROR"){
-            Switch-ButtonState -sndr $sender -TargetState "IDLE"
-        }
+    
     })
 
     $statusGrid.Children.Add($btn) | Out-Null
