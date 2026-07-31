@@ -73,9 +73,9 @@ function Switch-ButtonState {
     $sndr.Content = $script:states[$TargetState].Text + $sndr.Name.Replace("Btn", "")
 }
 
-$Buttons = @(@{Text = "RecoveryPartition"; Style = "IDLE"; RightClick = @()}, @{ Text = "Updates"; Style = "IDLE"; RightClick = @()}, @{ Text="DiskAllocated"; Style = "IDLE"; RightClick = @()}, 
-            @{Text = "SYSPREp"; Style = "IDLE"; RightClick = @()}, @{Text="RAM"; Style="IDLE"; RightClick = @()}, @{Text="Saturnin"; Style="IDLE"; RightClick = @()}, 
-            @{Text = "GetBitLLockerStatus"; Style="IDLE"; RightClick = @("TurnOnBitLocker", "TurnOffBitLocker")},@{Text="DeleteLocalUsers"; Style="COMMAND"; RightClick = @()}; @{Text="SusIdReplace"; Style="COMMAND"}; RightClick = @())
+$Buttons = @(@{Text = "RecoveryPartition"; Style = "IDLE"; RightClick = @("")}, @{ Text = "Updates"; Style = "IDLE"; RightClick = @("")}, @{ Text="DiskAllocated"; Style = "IDLE"; RightClick = @("")}, 
+            @{Text = "SYSPREp"; Style = "IDLE"; RightClick = @("")}, @{Text="RAM"; Style="IDLE"; RightClick = @("")}, @{Text="Saturnin"; Style="IDLE"; RightClick = @("")}, 
+            @{Text = "GetBitLLockerStatus"; Style="IDLE"; RightClick = @("TurnOnBitLocker", "TurnOffBitLocker")},@{Text="DeleteLocalUsers"; Style="COMMAND"; RightClick = @("")}; @{Text="SusIdReplace"; Style="COMMAND"; RightClick = @()})
 
 # 5. Build Dynamic Buttons
 foreach ($i in $Buttons) {
